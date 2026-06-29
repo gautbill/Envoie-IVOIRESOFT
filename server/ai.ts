@@ -161,3 +161,124 @@ function getFallbackTemplate(secteur: string, entreprise: string, type: string):
     return `Bonjour ${entreprise},\n\nC'est ma dernière tentative pour vous contacter. Nous offrons actuellement un audit digital gratuit de 30 minutes aux entreprises du secteur ${secteur}.\n\nC'est l'occasion idéale de faire le point sur vos outils numériques actuels sans aucun engagement.\n\n${cta}\n\n${signature}`;
   }
 }
+
+export async function analyzeCrmLead({
+  entreprise,
+  activite,
+  statut_wa,
+  statut_sms,
+  nb_relances,
+  crm_notes,
+  crm_valeur
+}: {
+  entreprise: string;
+  activite: string;
+  statut_wa: string;
+  statut_sms: string;
+  nb_relances: number;
+  crm_notes?: string;
+  crm_valeur?: number;
+}): Promise<{ score: number; analyse: string }> {
+  const client = getGeminiClient();
+  const crmNotesText = crm_notes ? `Notes actuelles: "${crm_notes}"` : "Aucune note saisie par l'agent.";
+  const crmValeurText = crm_valeur ? `Valeur estimée de l'opportunité: ${crm_valeur} FCFA` : "Valeur non définie.";
+
+  const systemInstruction = `
+Tu es un Directeur Commercial IA expert en B2B et transformation digitale en Côte d'Ivoire.
+Ton but est d'analyser une opportunité d'affaires (lead CRM) pour IvoireSoft CI, et de générer :
+1. Un score de conversion sur 100 (probabilité de signer l'accord, entier de 0 à 100).
+2. Une analyse stratégique ultra-personnalisée de 3-4 phrases en français contenant :
+   - Un diagnostic de l'état actuel de la relation.
+   - Des conseils précis pour le commercial pour l'accroche ou la négociation (ex: mentionner des problématiques de son secteur d'activité, que ce soit les restaurants, le BTP, la coiffure, etc. en Côte d'Ivoire).
+   - Une suggestion d'argument choc (prix, gain de temps, démonstration gratuite, etc.) adapté.
+
+Tu dois impérativement renvoyer un format JSON valide avec les clés "score" et "analyse".
+Exemple de JSON attendu :
+{
+  "score": 65,
+  "analyse": "Le prospect a été contacté et relancé une fois par WhatsApp. Étant dans le secteur de la restauration, son enjeu majeur à Abidjan est la gestion des commandes en ligne et la fidélisation. Je conseille de l'appeler directement pour lui proposer une démo de notre module de commande WhatsApp automatisé. Mentionnez que le maquis Chez Koffi a augmenté ses ventes de 25% avec nos outils."
+}
+Rends UNIQUEMENT le JSON valide, sans balises de code ni texte d'enrobage.
+`;
+
+  const userPrompt = `
+Fiche Prospect :
+- Entreprise: ${entreprise}
+- Secteur: ${activite}
+- Statut WhatsApp: ${statut_wa} (Relances envoyées: ${nb_relances}/3)
+- Statut SMS: ${statut_sms}
+- ${crmValeurText}
+- ${crmNotesText}
+
+Analyse cette opportunité et renvoie le JSON avec "score" et "analyse".`;
+
+  const config = DB.getConfig();
+  const openAiKey = config.openai_key;
+
+  // Try OpenAI first
+  if (openAiKey && openAiKey.startsWith('sk-')) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) {
+          const parsed = JSON.parse(text.trim());
+          return {
+            score: typeof parsed.score === 'number' ? parsed.score : 50,
+            analyse: parsed.analyse || "Analyse indisponible."
+          };
+        }
+      }
+    } catch (e) {
+      console.error('Failed to analyze with OpenAI:', e);
+    }
+  }
+
+  // Fallback to Gemini
+  if (client) {
+    try {
+      const response = await client.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.7,
+          responseMimeType: "application/json",
+        }
+      });
+      if (response.text) {
+        const parsed = JSON.parse(response.text.trim());
+        return {
+          score: typeof parsed.score === 'number' ? parsed.score : 50,
+          analyse: parsed.analyse || "Analyse indisponible."
+        };
+      }
+    } catch (e) {
+      console.error('Gemini lead analysis failed:', e);
+    }
+  }
+
+  // Fallback if APIs fail
+  const defaultScore = nb_relances > 0 ? 30 + nb_relances * 15 : 20;
+  return {
+    score: Math.min(defaultScore, 90),
+    analyse: `Analyse automatique (offline) : Le prospect "${entreprise}" (${activite}) montre un intérêt potentiel. Comme il est au statut WhatsApp "${statut_wa}", il est recommandé de lui proposer un audit de transformation digitale de ses opérations à Abidjan pour augmenter sa conversion.`
+  };
+}

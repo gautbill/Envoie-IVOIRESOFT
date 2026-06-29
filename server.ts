@@ -4,14 +4,18 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { DB } from "./server/db";
 import { tickSMS, tickWA, startScheduler, lastSmsRun, lastWaRun, isSmsRunning, isWaRunning, formatPhoneNumber } from "./server/cron";
-import { generateMessage } from "./server/ai";
+import { generateMessage, analyzeCrmLead } from "./server/ai";
 import { Contact, Campagne, EnvoisLog } from "./src/types";
 
 async function startServer() {
+  // Initialize Database (loads from Firebase or local db.json fallback)
+  await DB.init();
+
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Start background campaign cron scheduler
   startScheduler();
@@ -191,6 +195,32 @@ async function startServer() {
     try {
       DB.deleteContact(req.params.id);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/contacts/:id/analyze-crm", async (req, res) => {
+    try {
+      const contact = DB.getContactById(req.params.id);
+      if (!contact) return res.status(404).json({ error: "Contact non trouvé" });
+
+      const analysis = await analyzeCrmLead({
+        entreprise: contact.entreprise,
+        activite: contact.activite,
+        statut_wa: contact.statut_wa,
+        statut_sms: contact.statut_sms,
+        nb_relances: contact.nb_relances,
+        crm_notes: contact.crm_notes,
+        crm_valeur: contact.crm_valeur
+      });
+
+      const updated = DB.updateContact(req.params.id, {
+        crm_score_ia: analysis.score,
+        crm_analyse_ia: analysis.analyse
+      });
+
+      res.json(updated);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -694,6 +724,90 @@ async function startServer() {
       res.json({
         success: true,
         message: `Importation CSV réussie !`,
+        stats: {
+          imported: stats.imported,
+          updated: stats.updated,
+          totalParsed: importedContacts.length
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Bulk import existing contacts into CRM
+  app.post("/api/contacts/bulk-crm-import", (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids)) {
+        return res.status(400).json({ error: "Le paramètre ids doit être un tableau d'identifiants" });
+      }
+
+      if (ids.length === 0) {
+        return res.status(400).json({ error: "Le tableau d'identifiants est vide" });
+      }
+
+      const stats = DB.bulkImportToCrm(ids);
+      res.json({
+        success: true,
+        message: `${stats.imported} contacts importés avec succès dans le CRM !`,
+        stats: {
+          imported: stats.imported,
+          total: ids.length
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Direct bulk JSON array import
+  app.post("/api/contacts/import-bulk", (req, res) => {
+    try {
+      const { contacts } = req.body;
+      if (!contacts || !Array.isArray(contacts)) {
+        return res.status(400).json({ error: "Le paramètre contacts doit être un tableau d'objets" });
+      }
+
+      if (contacts.length === 0) {
+        return res.status(400).json({ error: "Le tableau de contacts est vide" });
+      }
+
+      const importedContacts: Omit<Contact, 'id' | 'created_at'>[] = [];
+      for (const item of contacts) {
+        if (item.entreprise && item.telephone) {
+          importedContacts.push({
+            entreprise: String(item.entreprise).trim(),
+            telephone: String(item.telephone).trim(),
+            activite: String(item.activite || 'Général').trim(),
+            statut_sms: item.statut_sms || 'nouveau',
+            statut_wa: item.statut_wa || 'nouveau',
+            date_envoi_sms: item.date_envoi_sms || null,
+            date_envoi_wa: item.date_envoi_wa || null,
+            nb_relances: typeof item.nb_relances === 'number' ? item.nb_relances : 0,
+            message_sms: item.message_sms || null,
+            message_wa: item.message_wa || null,
+            relance1_wa: item.relance1_wa || null,
+            relance2_wa: item.relance2_wa || null,
+            relance3_wa: item.relance3_wa || null,
+            canal_actif: item.canal_actif || 'les_deux',
+            crm_etape: item.crm_etape || undefined,
+            crm_valeur: typeof item.crm_valeur === 'number' ? item.crm_valeur : undefined,
+            crm_notes: item.crm_notes || undefined,
+            crm_score_ia: typeof item.crm_score_ia === 'number' ? item.crm_score_ia : undefined,
+            crm_analyse_ia: item.crm_analyse_ia || undefined
+          });
+        }
+      }
+
+      if (importedContacts.length === 0) {
+        return res.status(400).json({ error: "Aucun contact valide trouvé dans les données fournies. Format requis: entreprise, telephone" });
+      }
+
+      const stats = DB.bulkUpsertContacts(importedContacts);
+      res.json({
+        success: true,
+        message: `${importedContacts.length} contacts traités avec succès !`,
         stats: {
           imported: stats.imported,
           updated: stats.updated,

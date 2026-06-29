@@ -11,7 +11,9 @@ import {
   RefreshCw,
   Sparkles,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Briefcase,
+  LogOut
 } from 'lucide-react';
 
 import Dashboard from './components/Dashboard';
@@ -20,10 +22,16 @@ import EnvoiCategories from './components/EnvoiCategories';
 import Campagnes from './components/Campagnes';
 import Statistiques from './components/Statistiques';
 import Parametres from './components/Parametres';
+import GestionRelances from './components/GestionRelances';
+import CRM from './components/CRM';
+import Login from './components/Login';
 
 import { Contact, Campagne, EnvoisLog, AppConfig, DashboardStats } from './types';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('ivoiresoft_auth') === 'true';
+  });
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   
   // App States
@@ -36,6 +44,7 @@ export default function App() {
 
   // Global Refresh function
   const fetchData = async () => {
+    if (!localStorage.getItem('ivoiresoft_auth')) return;
     setLoading(true);
     try {
       const [resContacts, resCamps, resLogs, resConfig, resStats] = await Promise.all([
@@ -60,6 +69,7 @@ export default function App() {
 
   // Fetch on mount
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchData();
     
     // Set up auto-refresh every 15 seconds to sync background campaign runs
@@ -68,7 +78,7 @@ export default function App() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated]);
 
   const [timeString, setTimeString] = useState("");
   const [syncingSheets, setSyncingSheets] = useState(false);
@@ -103,6 +113,16 @@ export default function App() {
       setSyncingSheets(false);
     }
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem('ivoiresoft_auth');
+    localStorage.removeItem('ivoiresoft_user_email');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#08090D] flex flex-col font-sans select-none text-[#F1F5F9]">
@@ -180,6 +200,16 @@ export default function App() {
             {syncingSheets ? "Sync..." : "Sync Sheets"}
           </button>
 
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/15 hover:bg-red-600/30 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded text-xs font-bold transition-all cursor-pointer font-sans"
+            title="Se déconnecter"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Déconnexion</span>
+          </button>
+
         </div>
 
       </header>
@@ -202,7 +232,9 @@ export default function App() {
           {[
             { id: 'dashboard', name: 'Tableau de Bord', icon: Home },
             { id: 'contacts', name: 'Base Contacts', icon: Users },
+            { id: 'crm', name: 'Pipeline CRM', icon: Briefcase, badge: 'Intelligent' },
             { id: 'envoi-categories', name: 'Envoi Catégories', icon: Send, badge: 'Principal' },
+            { id: 'relances', name: 'Gestion Relances', icon: RefreshCw, badge: 'WhatsApp' },
             { id: 'campagnes', name: 'Suivi Campagnes', icon: Clock },
             { id: 'statistiques', name: 'Statistiques', icon: TrendingUp },
             { id: 'parametres', name: 'Paramètres APIs', icon: Settings },
@@ -233,6 +265,18 @@ export default function App() {
             );
           })}
 
+          {/* Divider */}
+          <div className="hidden md:block border-t border-white/5 my-4" />
+
+          {/* Sidebar Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded transition-all cursor-pointer whitespace-nowrap md:mt-auto"
+          >
+            <LogOut className="w-4 h-4 text-red-400/70" />
+            <span>Déconnexion</span>
+          </button>
+
         </aside>
 
         {/* WORKSPACE AREA */}
@@ -256,6 +300,15 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'crm' && (
+            <CRM 
+              contacts={contacts} 
+              config={config} 
+              onRefresh={fetchData} 
+              setActiveTab={setActiveTab} 
+            />
+          )}
+
           {activeTab === 'envoi-categories' && (
             <EnvoiCategories 
               contacts={contacts} 
@@ -269,6 +322,15 @@ export default function App() {
             <Campagnes 
               campagnes={campagnes} 
               logs={logs} 
+              onRefresh={fetchData} 
+              setActiveTab={setActiveTab} 
+            />
+          )}
+
+          {activeTab === 'relances' && (
+            <GestionRelances 
+              contacts={contacts} 
+              config={config} 
               onRefresh={fetchData} 
               setActiveTab={setActiveTab} 
             />

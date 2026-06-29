@@ -15,6 +15,13 @@ export interface Contact {
   relance3_wa: string | null;
   canal_actif: 'sms' | 'whatsapp' | 'les_deux';
   created_at: string;
+  
+  // CRM optional fields
+  crm_etape?: 'nouveau' | 'contacte' | 'discussion' | 'proposition' | 'gagne' | 'perdu';
+  crm_valeur?: number;
+  crm_notes?: string;
+  crm_score_ia?: number;
+  crm_analyse_ia?: string;
 }
 
 export interface Campagne {
