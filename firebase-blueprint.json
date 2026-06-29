@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Config": {
+      "title": "Config",
+      "description": "Global application config",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "CRM Contact",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "crm_score_ia": {
+          "type": "number"
+        }
+      }
+    },
+    "Campagne": {
+      "title": "Campagne",
+      "description": "Marketing campaign",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "EnvoiLog": {
+      "title": "EnvoiLog",
+      "description": "Sending log",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/config/{documentId}": {
+      "schema": "Config",
+      "description": "Global config"
+    },
+    "/contacts/{documentId}": {
+      "schema": "Contact",
+      "description": "CRM Contacts"
+    },
+    "/campagnes/{documentId}": {
+      "schema": "Campagne",
+      "description": "Marketing campaigns"
+    },
+    "/envois_log/{documentId}": {
+      "schema": "EnvoiLog",
+      "description": "Sending logs"
+    }
+  }
+}

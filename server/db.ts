@@ -11,7 +11,8 @@ import {
   deleteDoc, 
   getDoc,
   writeBatch,
-  Firestore
+  Firestore,
+  setLogLevel
 } from 'firebase/firestore';
 
 const DB_FILE = path.join(process.cwd(), 'db.json');
@@ -44,333 +45,7 @@ const DEFAULT_CONFIG: AppConfig = {
   sheets_id_contacts: '',
 };
 
-const SEED_CONTACTS: Omit<Contact, 'id' | 'created_at'>[] = [
-  // Restaurants
-  {
-    entreprise: 'Maquis Chez Koffi',
-    telephone: '+225 07 01 11 11 11',
-    activite: 'Restaurants',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Restaurant Le Plateau',
-    telephone: '+225 05 02 22 22 22',
-    activite: 'Restaurants',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Fast-food Yamousso',
-    telephone: '+225 01 03 33 33 33',
-    activite: 'Restaurants',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Snack Bar Cocody',
-    telephone: '+225 07 04 44 44 44',
-    activite: 'Restaurants',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  // BTP
-  {
-    entreprise: 'Construire CI SARL',
-    telephone: '+225 05 05 55 55 55',
-    activite: 'BTP',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'BTP Yao & Frères',
-    telephone: '+225 07 06 66 66 66',
-    activite: 'BTP',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Société Abidjan Bâtiment',
-    telephone: '+225 01 07 77 77 77',
-    activite: 'BTP',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Travaux Publics Kouame',
-    telephone: '+225 05 08 88 88 88',
-    activite: 'BTP',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  // Agences immobilières
-  {
-    entreprise: "Immo Côte d'Ivoire",
-    telephone: '+225 07 09 99 99 91',
-    activite: 'Agences immobilières',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Prestige Immobilier',
-    telephone: '+225 05 01 00 00 01',
-    activite: 'Agences immobilières',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Habitat Plus CI',
-    telephone: '+225 01 02 00 00 02',
-    activite: 'Agences immobilières',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Invest Immobilier',
-    telephone: '+225 07 03 00 00 03',
-    activite: 'Agences immobilières',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  // Transports
-  {
-    entreprise: 'Transport Rapide CI',
-    telephone: '+225 05 04 00 00 04',
-    activite: 'Transports',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'VTC Abidjan Express',
-    telephone: '+225 07 05 00 00 05',
-    activite: 'Transports',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Logistique Ivoire',
-    telephone: '+225 01 06 00 00 06',
-    activite: 'Transports',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Taxi Plus Cocody',
-    telephone: '+225 05 07 00 00 07',
-    activite: 'Transports',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  // Salons de coiffure
-  {
-    entreprise: 'Beauté Africaine Coiffure',
-    telephone: '+225 07 08 00 00 08',
-    activite: 'Salons de coiffure',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Salon Élégance Marcory',
-    telephone: '+225 01 09 00 00 09',
-    activite: 'Salons de coiffure',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Coiffure Mode CI',
-    telephone: '+225 05 01 00 00 10',
-    activite: 'Salons de coiffure',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  },
-  {
-    entreprise: 'Tendance Beauté Yopougon',
-    telephone: '+225 07 02 00 00 11',
-    activite: 'Salons de coiffure',
-    statut_sms: 'nouveau',
-    statut_wa: 'nouveau',
-    date_envoi_sms: null,
-    date_envoi_wa: null,
-    nb_relances: 0,
-    message_sms: null,
-    message_wa: null,
-    relance1_wa: null,
-    relance2_wa: null,
-    relance3_wa: null,
-    canal_actif: 'les_deux',
-  }
-];
+const SEED_CONTACTS: Omit<Contact, 'id' | 'created_at'>[] = [];
 
 // Helper to generate IDs
 function makeId(): string {
@@ -386,8 +61,18 @@ if (fs.existsSync(configPath)) {
   try {
     const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     app = initializeApp(firebaseConfig);
-    firestoreDb = getFirestore(app);
-    console.log("Firebase Firestore initialized successfully on backend.");
+    if (firebaseConfig.firestoreDatabaseId) {
+      firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+      console.log(`Firebase Firestore initialized on custom database: ${firebaseConfig.firestoreDatabaseId}`);
+    } else {
+      firestoreDb = getFirestore(app);
+      console.log("Firebase Firestore initialized successfully on default database.");
+    }
+    try {
+      setLogLevel('silent');
+    } catch (e) {
+      // ignore
+    }
   } catch (err) {
     console.error("Failed to initialize Firebase:", err);
   }
@@ -452,7 +137,8 @@ export class DB {
   private static async writeDocToFirestore(collectionName: string, docId: string, data: any): Promise<void> {
     if (!firestoreDb) return;
     try {
-      await setDoc(doc(firestoreDb, collectionName, docId), data);
+      const cleanData = JSON.parse(JSON.stringify(data));
+      await setDoc(doc(firestoreDb, collectionName, docId), cleanData);
     } catch (err) {
       console.error(`Error writing to Firestore (${collectionName}/${docId}):`, err);
     }
@@ -478,7 +164,8 @@ export class DB {
         const batch = writeBatch(firestoreDb);
         for (const item of chunk) {
           const docRef = doc(firestoreDb, collectionName, item.id);
-          batch.set(docRef, item);
+          const cleanItem = JSON.parse(JSON.stringify(item));
+          batch.set(docRef, cleanItem);
         }
         await batch.commit();
       }
@@ -628,7 +315,23 @@ export class DB {
       const oldContacts = [...cachedData.contacts];
       cachedData.contacts = [];
       if (firestoreDb) {
-        Promise.all(oldContacts.map(c => deleteDoc(doc(firestoreDb!, 'contacts', c.id)))).catch(err => {
+        // Use batched deletion to avoid overwhelming the Firestore write stream
+        const chunks: Contact[][] = [];
+        for (let i = 0; i < oldContacts.length; i += 500) {
+          chunks.push(oldContacts.slice(i, i + 500));
+        }
+        
+        // Execute batch deletes
+        (async () => {
+          for (const chunk of chunks) {
+            const batch = writeBatch(firestoreDb!);
+            for (const c of chunk) {
+              batch.delete(doc(firestoreDb!, 'contacts', c.id));
+            }
+            await batch.commit();
+          }
+          console.log("Successfully batch deleted all contacts in Firestore.");
+        })().catch(err => {
           console.error("Error batch deleting contacts on reset:", err);
         });
       } else {
@@ -656,7 +359,7 @@ export class DB {
           cachedData.contacts[index] = {
             ...cachedData.contacts[index],
             crm_etape: 'nouveau',
-            crm_valeur: cachedData.contacts[index].crm_valeur !== undefined ? cachedData.contacts[index].crm_valeur : 150000,
+            crm_valeur: cachedData.contacts[index].crm_valeur !== undefined ? cachedData.contacts[index].crm_valeur : 0,
             crm_notes: cachedData.contacts[index].crm_notes || 'Importé depuis la Base Contacts'
           };
           updatedContacts.push(cachedData.contacts[index]);
@@ -796,5 +499,45 @@ export class DB {
       this.writeDataToFile(cachedData);
     }
     return newLog;
+  }
+
+  public static updateContactsBulk(updatesList: { id: string, updates: Partial<Contact> }[]): void {
+    this.ensureInitialized();
+    const listToSave: Contact[] = [];
+    for (const item of updatesList) {
+      const index = cachedData.contacts.findIndex(c => c.id === item.id);
+      if (index !== -1) {
+        cachedData.contacts[index] = { ...cachedData.contacts[index], ...item.updates };
+        listToSave.push(cachedData.contacts[index]);
+      }
+    }
+    if (firestoreDb && listToSave.length > 0) {
+      this.batchWriteDocs('contacts', listToSave).catch(err => {
+        console.error("Error bulk updating contacts to Firestore:", err);
+      });
+    } else {
+      this.writeDataToFile(cachedData);
+    }
+  }
+
+  public static createLogsBulk(logsList: Omit<EnvoisLog, 'id' | 'created_at'>[]): void {
+    this.ensureInitialized();
+    const listToSave: EnvoisLog[] = [];
+    for (const log of logsList) {
+      const newLog: EnvoisLog = {
+        ...log,
+        id: makeId(),
+        created_at: new Date().toISOString(),
+      };
+      cachedData.envois_log.push(newLog);
+      listToSave.push(newLog);
+    }
+    if (firestoreDb && listToSave.length > 0) {
+      this.batchWriteDocs('envois_log', listToSave).catch(err => {
+        console.error("Error bulk creating logs to Firestore:", err);
+      });
+    } else {
+      this.writeDataToFile(cachedData);
+    }
   }
 }

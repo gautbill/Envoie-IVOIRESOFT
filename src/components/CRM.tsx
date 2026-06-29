@@ -71,7 +71,7 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
     entreprise: '',
     telephone: '',
     activite: 'Restaurants',
-    crm_valeur: 150000,
+    crm_valeur: 0,
     crm_notes: '',
     canal_actif: 'whatsapp' as 'sms' | 'whatsapp' | 'les_deux'
   });
@@ -229,7 +229,7 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
           entreprise: '',
           telephone: '',
           activite: 'Restaurants',
-          crm_valeur: 150000,
+          crm_valeur: 0,
           crm_notes: '',
           canal_actif: 'whatsapp'
         });
@@ -599,7 +599,7 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
                         onClick={() => {
                           setSelectedContact(lead);
                           setEditNotes(lead.crm_notes || '');
-                          setEditValeur(lead.crm_valeur || 150000);
+                          setEditValeur(lead.crm_valeur !== undefined ? lead.crm_valeur : 0);
                           setEditEtape(lead.crm_etape || 'nouveau');
                           setIsDetailModalOpen(true);
                         }}
@@ -745,7 +745,7 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
                             onClick={() => {
                               setSelectedContact(lead);
                               setEditNotes(lead.crm_notes || '');
-                              setEditValeur(lead.crm_valeur || 150000);
+                              setEditValeur(lead.crm_valeur !== undefined ? lead.crm_valeur : 0);
                               setEditEtape(lead.crm_etape || 'nouveau');
                               setIsDetailModalOpen(true);
                             }}

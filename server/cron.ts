@@ -132,25 +132,28 @@ export async function tickSMS(manual = false): Promise<{ success: boolean; messa
     if (apiSuccess) {
       // Update contacts and config
       const updatedCount = eligibleContacts.length;
-      for (const contact of eligibleContacts) {
-        DB.updateContact(contact.id, {
-          statut_sms: 'envoye',
+      
+      const contactUpdates = eligibleContacts.map(contact => ({
+        id: contact.id,
+        updates: {
+          statut_sms: 'envoye' as const,
           date_envoi_sms: todayStr,
           message_sms: messageText,
-        });
+        }
+      }));
+      DB.updateContactsBulk(contactUpdates);
 
-        // Insert into log
-        DB.createLog({
-          contact_id: contact.id,
-          campagne_id: campagne.id,
-          canal: 'sms',
-          type_envoi: 'premier_contact',
-          statut: 'envoye',
-          message: messageText,
-          numeros_batch: mobileNumberStr,
-          reponse_api: apiResponse,
-        });
-      }
+      const logsToCreate = eligibleContacts.map(contact => ({
+        contact_id: contact.id,
+        campagne_id: campagne.id,
+        canal: 'sms' as const,
+        type_envoi: 'premier_contact' as const,
+        statut: 'envoye' as const,
+        message: messageText,
+        numeros_batch: mobileNumberStr,
+        reponse_api: apiResponse,
+      }));
+      DB.createLogsBulk(logsToCreate);
 
       // Update campaigns count
       DB.updateCampagne(campagne.id, {
@@ -171,22 +174,25 @@ export async function tickSMS(manual = false): Promise<{ success: boolean; messa
       };
     } else {
       // Mark as error
-      for (const contact of eligibleContacts) {
-        DB.updateContact(contact.id, {
-          statut_sms: 'erreur',
-        });
+      const contactUpdates = eligibleContacts.map(contact => ({
+        id: contact.id,
+        updates: {
+          statut_sms: 'erreur' as const,
+        }
+      }));
+      DB.updateContactsBulk(contactUpdates);
 
-        DB.createLog({
-          contact_id: contact.id,
-          campagne_id: campagne.id,
-          canal: 'sms',
-          type_envoi: 'premier_contact',
-          statut: 'erreur',
-          message: messageText,
-          numeros_batch: mobileNumberStr,
-          reponse_api: apiResponse,
-        });
-      }
+      const logsToCreate = eligibleContacts.map(contact => ({
+        contact_id: contact.id,
+        campagne_id: campagne.id,
+        canal: 'sms' as const,
+        type_envoi: 'premier_contact' as const,
+        statut: 'erreur' as const,
+        message: messageText,
+        numeros_batch: mobileNumberStr,
+        reponse_api: apiResponse,
+      }));
+      DB.createLogsBulk(logsToCreate);
 
       isSmsRunning = false;
       return { success: false, message: "Échec de l'envoi du batch SMS via SMSLab API." };

@@ -155,7 +155,7 @@ export default function Statistiques({ contacts, logs }: StatistiquesProps) {
             Taux de contact par Secteur d'activité
           </h3>
           
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
             {metrics.sectorsArray.length === 0 ? (
               <div className="text-center py-12 text-gray-500 text-sm">
                 Aucun secteur répertorié.

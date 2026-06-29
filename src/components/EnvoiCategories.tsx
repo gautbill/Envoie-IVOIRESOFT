@@ -46,9 +46,20 @@ export default function EnvoiCategories({ contacts, config, onRefresh, setActive
     return counts;
   }, [contacts]);
 
+  const [catSortBy, setCatSortBy] = useState<'alpha' | 'count-asc'>('alpha');
+
   const distinctCategories = useMemo(() => {
-    return Object.keys(categoryCounts);
-  }, [categoryCounts]);
+    const categories = Object.keys(categoryCounts);
+    if (catSortBy === 'alpha') {
+      return [...categories].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    } else {
+      return [...categories].sort((a, b) => {
+        const countA = categoryCounts[a]?.total || 0;
+        const countB = categoryCounts[b]?.total || 0;
+        return countA - countB;
+      });
+    }
+  }, [categoryCounts, catSortBy]);
 
   const handleSelectCat = (cat: string) => {
     setAllCatsSelected(false);
@@ -373,9 +384,27 @@ export default function EnvoiCategories({ contacts, config, onRefresh, setActive
           {/* STEP 1: TARGETING */}
           {step === 1 && (
             <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">Étape 1 — Sélection des cibles</h2>
-                <p className="text-gray-400 text-xs">Ciblez les prospects d'Abidjan et de Côte d'Ivoire par secteur d'activité.</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2D3250] pb-3">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Étape 1 — Sélection des cibles</h2>
+                  <p className="text-gray-400 text-xs">Ciblez les prospects d'Abidjan et de Côte d'Ivoire par secteur d'activité.</p>
+                </div>
+                <div className="flex items-center gap-1 bg-[#131520] p-1 rounded-lg border border-[#2D3250] text-[11px] shrink-0 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCatSortBy('alpha')}
+                    className={`px-2.5 py-1 rounded transition-all cursor-pointer font-medium ${catSortBy === 'alpha' ? 'bg-violet-600 text-white shadow shadow-violet-500/30 font-semibold' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Alphabétique (A-Z)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCatSortBy('count-asc')}
+                    className={`px-2.5 py-1 rounded transition-all cursor-pointer font-medium ${catSortBy === 'count-asc' ? 'bg-violet-600 text-white shadow shadow-violet-500/30 font-semibold' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Volume (Croissant)
+                  </button>
+                </div>
               </div>
 
               {/* Selection Table */}
