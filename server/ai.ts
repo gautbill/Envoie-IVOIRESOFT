@@ -282,3 +282,96 @@ Analyse cette opportunité et renvoie le JSON avec "score" et "analyse".`;
     analyse: `Analyse automatique (offline) : Le prospect "${entreprise}" (${activite}) montre un intérêt potentiel. Comme il est au statut WhatsApp "${statut_wa}", il est recommandé de lui proposer un audit de transformation digitale de ses opérations à Abidjan pour augmenter sa conversion.`
   };
 }
+
+export async function analyzeCrmPortfolio(leads: any[]): Promise<string> {
+  const client = getGeminiClient();
+  
+  const summary = leads.map(l => ({
+    entreprise: l.entreprise,
+    secteur: l.activite,
+    etape: l.crm_etape,
+    valeur: l.crm_valeur || 0,
+    statut_paiement: l.crm_statut_paiement || 'non_paye',
+    avance: l.crm_avance || 0,
+    reste_a_payer: Math.max(0, (l.crm_valeur || 0) - (l.crm_statut_paiement === 'solde' ? (l.crm_valeur || 0) : (l.crm_avance || 0)))
+  }));
+
+  const systemInstruction = `
+Tu es le Directeur Financier & Stratégique IA de IvoireSoft CI.
+Ton rôle est d'analyser le portefeuille d'affaires (deals CRM) de l'entreprise et de rédiger un plan d'action d'optimisation commerciale et de recouvrement financier en Côte d'Ivoire.
+
+Structure ton analyse sous forme de 4 sections en Markdown clair, aéré et motivant :
+1. 📈 Évaluation du Portefeuille (résumé des opportunités clés et de la santé commerciale globale).
+2. 💰 Diagnostic de Recouvrement & Trésorerie (analyse des impayés, des avances reçues, et des alertes sur les restes à payer).
+3. 🎯 Top 3 des Actions Prioritaires (concrètes, avec le nom des entreprises à relancer d'urgence pour signer ou recouvrer).
+4. 🚀 Recommandations Stratégiques (conseils sectoriels pour augmenter le panier moyen à Abidjan).
+
+Ton ton doit être très professionnel, stratégique, direct et orienté résultats. Utilise des expressions locales professionnelles de Côte d'Ivoire si nécessaire (ex: "relance terrain", "recouvrement à Abidjan", etc.). Rédige directement en Markdown, sans phrases de politesse initiales ou de fin de l'IA.
+`;
+
+  const userPrompt = `
+Voici les données actuelles du pipeline CRM d'IvoireSoft CI :
+${JSON.stringify(summary, null, 2)}
+
+Analyse ces données et produis un rapport d'analyse financière et stratégique avec un plan d'action de recouvrement précis.`;
+
+  const config = DB.getConfig();
+  const openAiKey = config.openai_key;
+
+  // Try OpenAI first
+  if (openAiKey && openAiKey.startsWith('sk-')) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text.trim();
+      }
+    } catch (e) {
+      console.error('Failed to analyze portfolio with OpenAI:', e);
+    }
+  }
+
+  // Fallback to Gemini
+  if (client) {
+    try {
+      const response = await client.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.7,
+        }
+      });
+      if (response.text) {
+        return response.text.trim();
+      }
+    } catch (e) {
+      console.error('Gemini portfolio analysis failed:', e);
+    }
+  }
+
+  return `### Rapport d'analyse financière d'urgence (Hors-Ligne)
+
+1. **Évaluation du Portefeuille** : Le pipeline actuel contient des opportunités d'affaires à divers stades. Le suivi commercial doit être intensifié sur les étapes "discussion" et "proposition" pour accélérer le cycle de vente.
+2. **Diagnostic de Recouvrement & Trésorerie** : Plusieurs dossiers signés ou en cours présentent un solde restant à recouvrer. Il est capital d'instaurer des relances automatiques pour collecter les avances ou les soldes.
+3. **Actions Prioritaires** :
+   - Établir une relance téléphonique pour tous les dossiers marqués en "avance" avec un reste à payer important.
+   - Envoyer un rappel amical par WhatsApp pour les dossiers "non payé" ayant dépassé la date prévue.
+4. **Recommandations** : Proposer une remise exceptionnelle de 5% pour tout solde payé en avance afin d'accélérer les rentrées de trésorerie de l'entreprise.`;
+}

@@ -19,9 +19,21 @@ export interface Contact {
   // CRM optional fields
   crm_etape?: 'nouveau' | 'contacte' | 'discussion' | 'proposition' | 'gagne' | 'perdu';
   crm_valeur?: number;
+  crm_avance?: number;
+  crm_statut_paiement?: 'non_paye' | 'avance' | 'solde';
   crm_notes?: string;
   crm_score_ia?: number;
   crm_analyse_ia?: string;
+  crm_versements?: Versement[];
+}
+
+export interface Versement {
+  id: string;
+  montant: number;
+  date: string; // YYYY-MM-DD
+  mode: 'espece' | 'orange_money' | 'mtn_money' | 'wave' | 'virement' | 'cheque';
+  recu_numero: string;
+  commentaire?: string;
 }
 
 export interface Campagne {

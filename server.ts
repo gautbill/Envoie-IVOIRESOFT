@@ -4,7 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { DB } from "./server/db";
 import { tickSMS, tickWA, startScheduler, lastSmsRun, lastWaRun, isSmsRunning, isWaRunning, formatPhoneNumber } from "./server/cron";
-import { generateMessage, analyzeCrmLead } from "./server/ai";
+import { generateMessage, analyzeCrmLead, analyzeCrmPortfolio } from "./server/ai";
 import { Contact, Campagne, EnvoisLog } from "./src/types";
 
 async function startServer() {
@@ -221,6 +221,17 @@ async function startServer() {
       });
 
       res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/crm/portfolio-analysis", async (req, res) => {
+    try {
+      const contacts = DB.getContacts();
+      const crmLeads = contacts.filter(c => c.crm_etape);
+      const analysisText = await analyzeCrmPortfolio(crmLeads);
+      res.json({ analysis: analysisText });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
