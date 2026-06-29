@@ -413,6 +413,31 @@ export default function Contacts({ contacts, onRefresh, config }: ContactsProps)
     }
   };
 
+  // Export Contacts to Excel (.xlsx)
+  const handleExportXLSX = () => {
+    if (filteredContacts.length === 0) {
+      alert("Aucun contact à exporter.");
+      return;
+    }
+    const data = filteredContacts.map(c => ({
+      'Entreprise': c.entreprise,
+      'Téléphone': c.telephone,
+      'Activité': c.activite,
+      'Canal Actif': c.canal_actif || 'les_deux',
+      'Statut SMS': c.statut_sms || 'nouveau',
+      'Statut WhatsApp': c.statut_wa || 'nouveau',
+      'Nombre de Relances': c.nb_relances || 0,
+      'Date Envoi WA': c.date_envoi_wa || '',
+      'Date Envoi SMS': c.date_envoi_sms || '',
+      'Date Création': c.created_at || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Contacts Prospection');
+    XLSX.writeFile(workbook, `contacts_prospection_ivoiresoft_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   // Sort handler
   const handleSort = (field: 'entreprise' | 'created_at' | 'activite') => {
     if (sortBy === field) {
@@ -500,6 +525,15 @@ export default function Contacts({ contacts, onRefresh, config }: ContactsProps)
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             IMPORTER EXCEL / CSV
+          </button>
+
+          <button
+            onClick={handleExportXLSX}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/30 rounded text-xs font-bold transition-all cursor-pointer font-mono"
+            title="Exporter les contacts filtrés au format Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            EXPORTER EXCEL (.XLSX)
           </button>
 
           <button

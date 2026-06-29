@@ -591,6 +591,31 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
     document.body.removeChild(link);
   };
 
+  // Export XLSX (.xlsx)
+  const handleExportXLSX = () => {
+    const data = filteredSortedContacts.map(c => {
+      const remaining = Math.max(0, (c.crm_valeur || 0) - (c.crm_statut_paiement === 'solde' ? (c.crm_valeur || 0) : (c.crm_avance || 0)));
+      return {
+        'Entreprise': c.entreprise,
+        'Téléphone': c.telephone,
+        'Secteur d\'Activité': c.activite,
+        'Canal Actif': c.canal_actif || 'whatsapp',
+        'Étape CRM': c.crm_etape || 'nouveau',
+        'Valeur Estimée (FCFA)': c.crm_valeur || 0,
+        'Statut Paiement': c.crm_statut_paiement || 'non_paye',
+        'Avance Reçue (FCFA)': c.crm_avance || 0,
+        'Reste à Payer (FCFA)': remaining,
+        'Notes CRM': c.crm_notes || '',
+        'Score d\'Intérêt IA (%)': c.crm_score_ia !== undefined ? c.crm_score_ia : ''
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Pipeline CRM');
+    XLSX.writeFile(workbook, `pipeline_crm_ivoiresoft_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   // CRM Automatic Import from Base Contacts
   const handleAutoCrmImport = async () => {
     const importableIds = contacts.filter(c => !c.crm_etape).map(c => c.id);
@@ -725,6 +750,15 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
           >
             <Download className="w-3.5 h-3.5" />
             EXPORT CSV
+          </button>
+
+          <button
+            onClick={handleExportXLSX}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/30 rounded text-xs font-bold transition-all cursor-pointer font-mono"
+            title="Exporter les contacts au format Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            EXPORT EXCEL (.XLSX)
           </button>
 
           <button
