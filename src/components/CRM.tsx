@@ -15,6 +15,7 @@ import {
   Edit2,
   Trash2,
   Phone,
+  Smartphone,
   MessageSquare,
   X,
   Shield,
@@ -31,13 +32,14 @@ import {
   BarChart3,
   FileText
 } from 'lucide-react';
-import { Contact, AppConfig, Versement } from '../types';
+import { Contact, AppConfig, Versement, EnvoisLog } from '../types';
 
 interface CRMProps {
   contacts: Contact[];
   config: AppConfig | null;
   onRefresh: () => void;
   setActiveTab: (tab: string) => void;
+  logs: EnvoisLog[];
 }
 
 const STAGES = [
@@ -51,7 +53,7 @@ const STAGES = [
 
 type StageId = typeof STAGES[number]['id'];
 
-export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMProps) {
+export default function CRM({ contacts, config, onRefresh, setActiveTab, logs }: CRMProps) {
   // State variables
   const [viewType, setViewType] = useState<'kanban' | 'list'>('kanban');
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,7 +90,7 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
   const [editEtape, setEditEtape] = useState<StageId>('nouveau');
   const [editStatutPaiement, setEditStatutPaiement] = useState<'non_paye' | 'avance' | 'solde'>('non_paye');
   const [editAvance, setEditAvance] = useState(0);
-  const [activeModalTab, setActiveModalTab] = useState<'ai' | 'payments' | 'invoice'>('ai');
+  const [activeModalTab, setActiveModalTab] = useState<'ai' | 'payments' | 'invoice' | 'logs'>('ai');
   const [editVersements, setEditVersements] = useState<Versement[]>([]);
   const [newVersementMontant, setNewVersementMontant] = useState<number | ''>('');
   const [newVersementMode, setNewVersementMode] = useState<Versement['mode']>('wave');
@@ -138,6 +140,11 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
       return crmSortOrder === 'asc' ? comparison : -comparison;
     });
   }, [contacts, searchTerm, selectedActivity, crmSortBy, crmSortOrder]);
+
+  const contactLogs = useMemo(() => {
+    if (!selectedContact) return [];
+    return logs.filter(l => l.contact_id === selectedContact.id);
+  }, [selectedContact, logs]);
 
   const getStageContacts = (stage: StageId) => {
     return filteredSortedContacts.filter(c => {
@@ -742,14 +749,6 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
           >
             <Upload className="w-3.5 h-3.5" />
             IMPORTER BASE CONTACTS
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0F121D] hover:bg-white/5 text-white/70 border border-white/10 rounded text-xs font-bold transition-all cursor-pointer font-mono"
-          >
-            <Download className="w-3.5 h-3.5" />
-            EXPORT CSV
           </button>
 
           <button
@@ -1485,6 +1484,16 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
                     <FileText className="w-3.5 h-3.5" />
                     Facture / Relance
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab('logs')}
+                    className={`px-3 py-1.5 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                      activeModalTab === 'logs' ? 'bg-indigo-600 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Échanges ({contactLogs.length})
+                  </button>
                 </div>
                 
                 {selectedContact.crm_score_ia !== undefined && activeModalTab === 'ai' && (
@@ -1823,6 +1832,128 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab }: CRMPr
                       </div>
                     );
                   })()}
+                </div>
+              )}
+
+              {activeModalTab === 'logs' && (
+                <div className="flex-1 flex flex-col space-y-4 text-left">
+                  {/* Status Summary Banner */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#08090D] border border-white/5 p-3 rounded-xl font-mono text-xs">
+                    <div className="space-y-0.5">
+                      <span className="text-white/40 block text-[9px] uppercase font-bold">Canal Actif</span>
+                      <span className="text-white font-bold uppercase">{selectedContact.canal_actif === 'les_deux' ? 'SMS & WhatsApp' : selectedContact.canal_actif}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-white/40 block text-[9px] uppercase font-bold">Statut SMS</span>
+                      <span className={`font-bold uppercase ${
+                        selectedContact.statut_sms === 'envoye' ? 'text-emerald-400' :
+                        selectedContact.statut_sms === 'erreur' ? 'text-red-400' : 'text-blue-400'
+                      }`}>
+                        {selectedContact.statut_sms === 'envoye' ? '✅ Envoyé' :
+                         selectedContact.statut_sms === 'erreur' ? '❌ Erreur' : '⏳ Nouveau'}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-white/40 block text-[9px] uppercase font-bold">Statut WhatsApp</span>
+                      <span className={`font-bold uppercase ${
+                        selectedContact.statut_wa === 'termine' ? 'text-emerald-400' :
+                        selectedContact.statut_wa === 'hors_whatsapp' ? 'text-orange-400' :
+                        selectedContact.statut_wa === 'erreur' ? 'text-red-400' : 'text-blue-400'
+                      }`}>
+                        {selectedContact.statut_wa === 'termine' ? '✅ Terminé' :
+                         selectedContact.statut_wa === 'hors_whatsapp' ? '⚠️ Hors WA' :
+                         selectedContact.statut_wa === 'erreur' ? '❌ Erreur' : `⏳ ${selectedContact.statut_wa}`}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-white/40 block text-[9px] uppercase font-bold">Relances WA</span>
+                      <span className="text-white font-bold">{selectedContact.nb_relances} / 3</span>
+                    </div>
+                  </div>
+
+                  {/* List of Logs */}
+                  <div className="flex-1 bg-[#08090D] border border-white/5 rounded-xl p-4 min-h-[300px] max-h-[400px] overflow-y-auto space-y-3.5">
+                    <span className="text-[9px] font-bold text-indigo-400 font-mono uppercase tracking-wider block border-b border-white/5 pb-1 mb-2">
+                      Historique complet des échanges ({contactLogs.length})
+                    </span>
+
+                    {contactLogs.length === 0 ? (
+                      <div className="text-center py-16 text-white/20 text-[11px]">
+                        <MessageSquare className="w-8 h-8 mx-auto text-white/5 mb-2 animate-pulse" />
+                        Aucun envoi automatique ou manuel enregistré pour ce contact.<br />
+                        Les échanges (SMS et WhatsApp) s'afficheront ici au fur et à mesure des campagnes.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {[...contactLogs]
+                          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+                          .map((log) => {
+                            const isSms = log.canal === 'sms';
+                            const formattedDate = log.created_at 
+                              ? new Date(log.created_at).toLocaleString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : '-';
+
+                            return (
+                              <div key={log.id} className="bg-[#101323] border border-white/5 hover:border-white/10 rounded-lg p-3.5 space-y-2.5 transition-all">
+                                {/* Header of log */}
+                                <div className="flex items-center justify-between flex-wrap gap-2 text-[10px] font-mono">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`p-1 rounded ${
+                                      isSms ? 'bg-orange-500/10 text-orange-400' : 'bg-green-500/10 text-green-400'
+                                    }`}>
+                                      {isSms ? <Smartphone className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                                    </div>
+                                    <span className="font-extrabold uppercase tracking-wide text-white/80">
+                                      {isSms ? 'SMS' : 'WhatsApp'}
+                                    </span>
+                                    <span className="text-white/30">•</span>
+                                    <span className="px-1.5 py-0.2 bg-white/5 text-white/60 rounded text-[9px] uppercase font-bold">
+                                      {log.type_envoi === 'premier_contact' ? 'Premier Contact' :
+                                       log.type_envoi === 'relance_1' ? 'Relance 1' :
+                                       log.type_envoi === 'relance_2' ? 'Relance 2' :
+                                       log.type_envoi === 'relance_3' ? 'Relance 3' : log.type_envoi}
+                                    </span>
+                                    {log.campagne_nom && (
+                                      <>
+                                        <span className="text-white/30">•</span>
+                                        <span className="text-blue-400 font-semibold">
+                                          Campagne: {log.campagne_nom}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white/40">{formattedDate}</span>
+                                    <span className={`px-2 py-0.2 rounded font-bold uppercase text-[8px] ${
+                                      log.statut === 'envoye' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                      log.statut === 'hors_whatsapp' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                                      'bg-red-500/10 text-red-400 border border-red-500/20'
+                                    }`}>
+                                      {log.statut === 'envoye' ? 'Succès' :
+                                       log.statut === 'hors_whatsapp' ? 'Hors WA' : 'Échec'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Message bubble */}
+                                {log.message && (
+                                  <div className="bg-black/25 rounded-lg p-2.5 border border-white/5 text-white/80 font-sans text-xs whitespace-pre-line leading-relaxed">
+                                    {log.message}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

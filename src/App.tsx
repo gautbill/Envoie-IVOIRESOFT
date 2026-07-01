@@ -306,6 +306,7 @@ export default function App() {
               config={config} 
               onRefresh={fetchData} 
               setActiveTab={setActiveTab} 
+              logs={logs}
             />
           )}
 
