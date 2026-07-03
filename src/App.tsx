@@ -13,7 +13,9 @@ import {
   CheckCircle,
   AlertCircle,
   Briefcase,
-  LogOut
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import Dashboard from './components/Dashboard';
@@ -33,6 +35,19 @@ export default function App() {
     return localStorage.getItem('ivoiresoft_auth') === 'true';
   });
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('ivoiresoft_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ivoiresoft_theme', theme);
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  }, [theme]);
   
   // App States
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -189,6 +204,20 @@ export default function App() {
 
             </div>
           )}
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="flex items-center justify-center p-1.5 bg-[#1E2235] hover:bg-[#252A42] border border-[#2D3250] rounded text-gray-300 hover:text-white transition-all cursor-pointer"
+            title={theme === 'dark' ? "Passer au thème clair" : "Passer au thème sombre"}
+            id="theme-toggle-button"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-blue-400" />
+            )}
+          </button>
 
           {/* Sync Google Sheets Button */}
           <button
