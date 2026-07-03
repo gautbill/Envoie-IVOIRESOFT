@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import IvoireSoftLogo from './IvoireSoftLogo';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -45,13 +46,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         
         {/* Brand identity header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="p-3 bg-blue-600/10 text-blue-400 rounded-xl border border-blue-500/20 shadow-lg flex items-center justify-center mb-4">
-            <ShieldCheck className="w-8 h-8 animate-pulse" />
+          <div className="mb-4 flex justify-center transform hover:scale-105 transition-all duration-300">
+            <IvoireSoftLogo size="lg" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2 font-sans">
-            IvoireSoft CI <span className="text-[10px] bg-blue-500/15 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono font-medium">v1.2</span>
-          </h1>
-          <p className="text-xs text-white/50 font-mono tracking-tight uppercase mt-1">Console de Securité d'Automatisation</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="p-1 bg-blue-600/10 text-blue-400 rounded border border-blue-500/20 text-[10px] font-mono uppercase tracking-widest font-semibold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" /> Secure Console v1.2
+            </span>
+          </div>
         </div>
 
         {/* Form */}

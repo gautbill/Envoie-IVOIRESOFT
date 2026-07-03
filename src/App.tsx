@@ -27,6 +27,7 @@ import Parametres from './components/Parametres';
 import GestionRelances from './components/GestionRelances';
 import CRM from './components/CRM';
 import Login from './components/Login';
+import IvoireSoftLogo from './components/IvoireSoftLogo';
 
 import { Contact, Campagne, EnvoisLog, AppConfig, DashboardStats } from './types';
 
@@ -147,15 +148,10 @@ export default function App() {
         
         {/* Brand identity */}
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600/15 text-blue-400 rounded-lg border border-blue-500/30 shadow-inner flex items-center justify-center">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-              IvoireSoft CI <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono font-medium">v1.2</span>
-            </h1>
-            <p className="text-[10px] text-white/50 font-mono tracking-tight uppercase">SMS & WhatsApp Automation Console</p>
-          </div>
+          <IvoireSoftLogo size="sm" />
+          <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono font-medium self-center -ml-1">
+            v1.2
+          </span>
         </div>
 
         {/* Dynamic UTC Clock */}

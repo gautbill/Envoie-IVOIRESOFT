@@ -33,6 +33,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Contact, AppConfig, Versement, EnvoisLog } from '../types';
+import { getLogoSvgHtml } from './IvoireSoftLogo';
 
 interface CRMProps {
   contacts: Contact[];
@@ -428,11 +429,10 @@ export default function CRM({ contacts, config, onRefresh, setActiveTab, logs }:
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="header">
+          <div class="header" style="align-items: center;">
             <div>
-              <div class="logo">IVOIRESOFT <span style="color: #3b82f6;">CI</span></div>
-              <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Solutions Digitales & CRM intégrés</div>
-              <div style="font-size: 11px; color: #64748b;">Cocody, Abidjan, Côte d'Ivoire</div>
+              ${getLogoSvgHtml()}
+              <div style="font-size: 11px; color: #64748b; margin-top: 8px;">Cocody, Abidjan, Côte d'Ivoire</div>
             </div>
             <div style="text-align: right;">
               <div style="font-size: 18px; font-weight: bold; color: #0f172a;">FACTURE / REÇU DE PAIEMENT</div>
